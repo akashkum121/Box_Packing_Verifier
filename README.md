@@ -75,10 +75,10 @@ project/
 *Step 1 scans the secondary box label (Model + Qty auto-filled). Step 2 scans each primary box and instantly flags a match or mismatch — here catching a model mismatch (`PSDE:875U CON` expected vs. `DIESEL ENGINE-87.5 U` scanned).*
 
 ### Live Packing Status
-![Live Packing Status](screenshots/live-packing-status.png)
+![Live Packing Status](https://github.com/akashkum121/Box_Packing_Verifier/blob/main/Live%20Packing%20Status.png)
 *Real-time dashboard: secondary box number, packed count, capacity, rejected count, progress bar, active secondary model, and scan history log.*
 
-> The image files are included in the `screenshots/` folder of this deliverable — just commit that folder to your repo root alongside the updated `README.md`.
+
 
 ---
 
