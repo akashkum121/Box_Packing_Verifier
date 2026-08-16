@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Box Packing Verifier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Roboto+Mono:wght@600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange:   #64FFDA;
+      --orange2:  #ef1515;
+      --yellow:   #1308f3;
+      --dark:     #0A192F;
+      --dark2:    #0A192F;
+      --dark3:    #112240;
+      --card:     #010711;
+      --border:   #233554;
+      --text:     #CCD6F6;
+      --muted:    #8892B0;
+      --green:    #39FF14;
+      --red:      #e5250c;
+      --shadow:   0 8px 32px rgba(19, 1, 1, 0.8);
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--dark2), var(--dark3));
+      border-bottom: 3px solid var(--orange);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo { display: flex; align-items: center; gap: 14px; }
+    .logo-icon {
+      width: 46px; height: 46px;
+      background: linear-gradient(135deg, var(--orange), var(--yellow));
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 24px; box-shadow: 0 0 20px rgba(100,255,218,0.5);
+    }
+    .logo-text h1 { font-size: 1.2rem; font-weight: 900; color: var(--orange); letter-spacing: 1px; }
+    .logo-text p { font-size: 0.72rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+    .header-info { display: flex; gap: 20px; align-items: center; }
+    .badge {
+      background: var(--dark3); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 14px; font-size: 0.75rem;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+    }
+    .badge span { color: var(--orange); font-weight: 700; }
+
+    main {
+      max-width: 1100px; margin: 0 auto; padding: 32px 20px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    }
+    @media (max-width: 700px) { main { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px; box-shadow: var(--shadow);
+      transition: border-color 0.3s;
+    }
+    .card:hover { border-color: var(--orange); }
+    .card-title { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+    .card-title .icon { font-size: 1.5rem; }
+    .card-title h2 {
+      font-size: 1rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 2px; color: var(--orange);
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: 12px;
+      padding: 24px; text-align: center; background: var(--dark2);
+      cursor: pointer; transition: border-color 0.3s, background-color 0.3s;
+      margin-bottom: 18px; position: relative;
+    }
+    .upload-zone:hover { border-color: var(--orange); background: rgba(100,255,218,0.02); }
+    .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-icon { font-size: 2.2rem; color: var(--muted); margin-bottom: 8px; }
+    .upload-text { font-size: 0.85rem; color: var(--text); font-weight: 600; }
+    .upload-sub { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+    .preview-img {
+      max-width: 100%; max-height: 180px; margin-top: 12px;
+      border-radius: 8px; display: none; border: 1px solid var(--orange);
+      object-fit: contain; margin-left: auto; margin-right: auto;
+    }
+
+    label {
+      display: block; font-size: 0.72rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 6px;
+    }
+    input[type="text"], input[type="number"] {
+      width: 100%; background: var(--dark2); border: 1.5px solid var(--border);
+      border-radius: 10px; color: var(--text); font-size: 1rem;
+      font-family: 'Roboto Mono', monospace; padding: 12px 16px; margin-bottom: 18px;
+      outline: none; transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(100,255,218,0.2); }
+
+    .btn {
+      width: 100%; padding: 14px; border: none; border-radius: 10px;
+      font-size: 1rem; font-weight: 700; cursor: pointer; letter-spacing: 1px;
+      text-transform: uppercase; transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: linear-gradient(135deg, var(--orange), var(--yellow)); color: var(--dark); box-shadow: 0 4px 20px rgba(100,255,218,0.3); }
+    .btn-primary:hover { box-shadow: 0 6px 28px rgba(100,255,218,0.5); }
+    .btn-secondary { background: transparent; border: 1.5px solid var(--border); color: var(--muted); margin-top: 10px; }
+    .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
+
+    .status-panel { grid-column: 1 / -1; }
+    .session-info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+    @media (max-width: 700px) { .session-info { grid-template-columns: repeat(2,1fr); } }
+
+    .stat-box { background: var(--dark2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+    .stat-box .stat-val { font-size: 2rem; font-weight: 900; font-family: 'Roboto Mono', monospace; color: var(--orange); line-height: 1; }
+    .stat-box .stat-lbl { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-top: 6px; }
+
+    .progress-wrap { background: var(--dark2); border-radius: 50px; height: 28px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 16px; position: relative; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, var(--orange), var(--yellow)); border-radius: 50px; transition: width 0.5s cubic-bezier(0.4,0,0.2,1); min-width: 0; }
+    .progress-label { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.78rem; font-weight: 700; color: var(--dark); font-family: 'Roboto Mono', monospace; mix-blend-mode: difference; filter: invert(1); }
+
+    .alert { border-radius: 12px; padding: 16px 20px; font-size: 0.95rem; font-weight: 600; display: none; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .alert.show { display: flex; }
+    .alert-success { background: rgba(100,255,218,0.08); border: 1.5px solid var(--orange); color: var(--orange); }
+    .alert-error { background: rgba(255,51,51,0.12); border: 1.5px solid var(--red); color: var(--red); }
+
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999; align-items: center; justify-content: center; }
+    .overlay.show { display: flex; }
+    .overlay-box { background: var(--dark2); border: 3px solid var(--orange); border-radius: 20px; padding: 48px 40px; text-align: center; max-width: 500px; width: 90%; }
+
+    .log-wrap { max-height: 240px; overflow-y: auto; margin-top: 10px; }
+    .log-entry { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 0.82rem; font-family: 'Roboto Mono', monospace; }
+    .log-entry.match { background: rgba(100,255,218,0.07); border-left: 3px solid var(--orange); }
+    .log-entry.mismatch { background: rgba(255,51,51,0.08); border-left: 3px solid var(--red); }
+    .log-time { color: var(--muted); font-size: 0.7rem; margin-left: auto; }
+
+    .divider { grid-column: 1 / -1; border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+    .card.locked { opacity: 0.45; pointer-events: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📦</div>
+    <div class="logo-text">
+      <h1>Manufacturing Box Label Extraction</h1>
+      <p>Techno World &amp; Logistics Ltd.</p>
+    </div>
+  </div>
+  <div class="header-info">
+    <div class="badge">Station <span id="hdr-station">MAIN</span></div>
+    <div class="badge">Box <span id="hdr-boxno">—</span></div>
+    <div class="badge" id="hdr-status-badge">⬤ <span id="hdr-status">IDLE</span></div>
+  </div>
+</header>
+
+<main>
+  <!-- STEP 1: Secondary Box -->
+  <div class="card" id="card-secondary">
+    <div class="card-title">
+      <!-- <span class="icon">🏷️</span> -->
+      <h2>Step 1 — Scan Secondary Label</h2>
+    </div>
+
+    <div class="upload-zone">
+      <div class="upload-icon">📷</div>
+      <div class="upload-text">Upload Secondary Label Image</div>
+      <div class="upload-sub">Drag &amp; drop or click to choose file</div>
+      <input type="file" id="sec-file" accept="image/*" onchange="handleSecondaryUpload(this)" />
+    </div>
+
+    <div style="margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
+      <label for="sec-model">Extracted Model Name</label>
+      <input type="text" id="sec-model" placeholder="Model Name" autocomplete="off" />
+
+      <label for="sec-qty">Extracted Capacity (QTY)</label>
+      <input type="number" id="sec-qty" placeholder="Quantity" min="1" />
+
+      <button class="btn btn-primary" id="btn-setup" onclick="setupSecondary()">
+        Set Secondary Box
+      </button>
+      <button class="btn btn-secondary" id="btn-reset" onclick="resetSession()">
+        🔄 Reset Session
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Primary Box -->
+  <div class="card locked" id="card-primary">
+    <div class="card-title">
+      <!-- <span class="icon">🔍</span> -->
+      <h2>Step 2 — Verify Primary Box</h2>
+    </div>
+
+    <div class="upload-zone">
+      <div class="upload-icon">📷</div>
+      <div class="upload-text">Upload Primary Label Image</div>
+      <div class="upload-sub">Scan / Upload to verify automatically</div>
+      <input type="file" id="prim-file" accept="image/*" onchange="handlePrimaryUpload(this)" />
+    </div>
+
+    <div id="alert-box" class="alert">
+      <span class="alert-icon" id="alert-icon">ℹ️</span>
+      <span id="alert-msg">Waiting…</span>
+    </div>
+
+    <div style="margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
+      <label for="prim-model">Extracted Model Name</label>
+      <input type="text" id="prim-model" placeholder="Model Name" autocomplete="off" onkeydown="if(event.key==='Enter') scanPrimary()" />
+
+      <button class="btn btn-primary" id="btn-scan" onclick="scanPrimary()">
+        Verify &amp; Pack (Manual)
+      </button>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- STATUS PANEL -->
+  <div class="card status-panel">
+    <div class="card-title">
+      <!-- <span class="icon">📊</span> -->
+      <h2>Live Packing Status</h2>
+    </div>
+
+    <div class="session-info">
+      <div class="stat-box">
+        <div class="stat-val" id="stat-boxno">—</div>
+        <div class="stat-lbl">Secondary Box #</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="stat-count">0</div>
+        <div class="stat-lbl">Packed</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="stat-qty">—</div>
+        <div class="stat-lbl">Capacity</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="stat-rejected" style="color:var(--red)">0</div>
+        <div class="stat-lbl">Rejected</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+      <span class="progress-label" id="progress-lbl">0 / —</span>
+    </div>
+
+    <p style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;">
+      Active Secondary Model:
+      <strong id="active-model" style="color:var(--orange2);font-family:'Roboto Mono',monospace;">Not set</strong>
+    </p>
+
+    <label>Scan History (latest first)</label>
+    <div class="log-wrap" id="log-wrap">
+      <div style="color:var(--muted);font-size:0.8rem;padding:8px;">No scans yet.</div>
+    </div>
+  </div>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-box">
+    <span style="font-size:4rem;display:block;margin-bottom:16px;">🚨</span>
+    <h2 style="color:var(--orange);font-size:1.8rem;margin-bottom:10px;">Secondary Box Full!</h2>
+    <p style="color:var(--muted);margin-bottom:28px;">Please seal and change the secondary box, then set up the next one.</p>
+    <button class="btn btn-primary" onclick="closeOverlayAndReset()">📦 Set Up Next Secondary Box</button>
+  </div>
+</div>
+
+<script>
+  const API = "";
+  let currentSession = { active: false, count: 0, qty: 0, rejected: 0, box_no: 0 };
+  let logEntries = [];
+
+  window.onload = async () => { await fetchSession(); };
+
+  async function fetchSession() {
+    try {
+      const r = await fetch(`${API}/api/session/main`);
+      const d = await r.json();
+      if (d.active) {
+        currentSession = d;
+        updateUI();
+        unlockPrimary();
+      }
+    } catch(_) {}
+  }
+
+  // ── HANDLE SECONDARY IMAGE UPLOAD ──
+  async function handleSecondaryUpload(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const zone = input.parentElement;
+    const uploadText = zone.querySelector(".upload-text");
+    const originalText = uploadText.textContent;
+    uploadText.textContent = "Processing EasyOCR...";
+
+    try {
+      const r = await fetch(`${API}/api/secondary/upload?station_id=main`, {
+        method: "POST",
+        body: formData
+      });
+      const d = await r.json();
+
+      if (!r.ok) throw new Error(d.detail || "Failed to process secondary box image");
+
+      // Auto-fill extracted values into suitable input fields
+      document.getElementById("sec-model").value = d.secondary_model || "";
+      document.getElementById("sec-qty").value = d.qty || "";
+
+      currentSession = {
+        active: true, secondary_model: d.secondary_model,
+        qty: d.qty, count: 0, box_no: d.box_no, rejected: 0
+      };
+      updateUI();
+      unlockPrimary();
+      showAlert("success", "✅", `Successfully extracted Secondary Box! Model: ${d.secondary_model} | QTY: ${d.qty}`);
+    } catch(e) {
+      showAlert("error", "❌", e.message);
+    } finally {
+      uploadText.textContent = originalText;
+      input.value = "";
+    }
+  }
+
+  // ── HANDLE PRIMARY IMAGE UPLOAD ──
+  async function handlePrimaryUpload(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const zone = input.parentElement;
+    const uploadText = zone.querySelector(".upload-text");
+    const originalText = uploadText.textContent;
+    uploadText.textContent = "Verifying Image via EasyOCR...";
+
+    try {
+      const r = await fetch(`${API}/api/primary/upload?station_id=main`, {
+        method: "POST",
+        body: formData
+      });
+      const d = await r.json();
+
+      if (!r.ok) throw new Error(d.detail || "Failed to verify primary box image");
+
+      // Fill extracted primary model into field
+      if (d.primary_model) {
+        document.getElementById("prim-model").value = d.primary_model;
+      }
+
+      currentSession.count = d.count;
+      currentSession.rejected = d.rejected ?? currentSession.rejected;
+      updateUI();
+
+      if (d.status === "match") {
+        showAlert("success", "✅", d.message);
+        addLog("match", d.primary_model || "Image Scan", d.count, currentSession.qty);
+      } else if (d.status === "full") {
+        addLog("match", d.primary_model || "Image Scan", d.count, currentSession.qty);
+        showFullOverlay(d);
+      } else if (d.status === "mismatch") {
+        showAlert("error", "❌", `MODEL NOT MATCHED — Expected: <strong>${d.expected}</strong>, Got: <strong>${d.got}</strong>`);
+        addLog("mismatch", d.primary_model || "Image Scan", d.count, currentSession.qty);
+      }
+    } catch(e) {
+      showAlert("error", "❌", e.message);
+    } finally {
+      uploadText.textContent = originalText;
+      input.value = "";
+    }
+  }
+
+  async function setupSecondary() {
+    const model = document.getElementById("sec-model").value.trim();
+    const qty = parseInt(document.getElementById("sec-qty").value);
+
+    if (!model) { showAlert("error", "⚠️", "Please enter a model name."); return; }
+    if (!qty || qty < 1) { showAlert("error", "⚠️", "Please enter a valid QTY (≥ 1)."); return; }
+
+    try {
+      const r = await fetch(`${API}/api/secondary/setup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ station_id: "main", model, qty })
+      });
+      const d = await r.json();
+
+      currentSession = { active: true, secondary_model: model.toUpperCase(), qty, count: 0, box_no: d.box_no, rejected: 0 };
+      updateUI();
+      unlockPrimary();
+      showAlert("success", "✅", `Secondary Box Setup! Model: ${model.toUpperCase()} | QTY: ${qty}`);
+    } catch(e) {
+      showAlert("error", "❌", e.message);
+    }
+  }
+
+  async function scanPrimary() {
+    const model = document.getElementById("prim-model").value.trim();
+    if (!model) { showAlert("error", "⚠️", "Please enter a primary box model."); return; }
+
+    try {
+      const r = await fetch(`${API}/api/primary/scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ station_id: "main", model })
+      });
+      const d = await r.json();
+
+      currentSession.count = d.count;
+      currentSession.rejected = d.rejected ?? currentSession.rejected;
+      updateUI();
+
+      if (d.status === "match") {
+        showAlert("success", "✅", d.message);
+        addLog("match", model, d.count, currentSession.qty);
+        document.getElementById("prim-model").value = "";
+      } else if (d.status === "full") {
+        addLog("match", model, d.count, currentSession.qty);
+        showFullOverlay(d);
+      } else if (d.status === "mismatch") {
+        showAlert("error", "❌", `MODEL NOT MATCHED — Expected: <strong>${d.expected}</strong>, Got: <strong>${d.got}</strong>`);
+        addLog("mismatch", model, d.count, currentSession.qty);
+      }
+    } catch(e) {
+      showAlert("error", "❌", e.message);
+    }
+  }
+
+  async function resetSession() {
+    if (!confirm("Reset current session? This will clear all progress.")) return;
+    await fetch(`${API}/api/session/main/reset`, { method: "POST" });
+    currentSession = { active: false, count: 0, qty: 0, rejected: 0, box_no: 0 };
+    logEntries = [];
+    lockPrimary();
+    updateUI();
+    
+    // Clear inputs
+    document.getElementById("sec-model").value = "";
+    document.getElementById("sec-qty").value = "";
+    document.getElementById("prim-model").value = "";
+    document.getElementById("log-wrap").innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:8px;">No scans yet.</div>';
+    
+    hideAlert();
+  }
+
+  function showFullOverlay(d) {
+    document.getElementById("overlay").classList.add("show");
+  }
+
+  function closeOverlayAndReset() {
+    document.getElementById("overlay").classList.remove("show");
+    
+    // Clear inputs
+    document.getElementById("sec-model").value = "";
+    document.getElementById("sec-qty").value = "";
+    document.getElementById("prim-model").value = "";
+    logEntries = [];
+    document.getElementById("log-wrap").innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:8px;">No scans yet.</div>';
+    
+    lockPrimary();
+    hideAlert();
+  }
+
+  function updateUI() {
+    const s = currentSession;
+    const pct = s.qty ? Math.round((s.count / s.qty) * 100) : 0;
+
+    document.getElementById("stat-boxno").textContent = s.box_no || "—";
+    document.getElementById("stat-count").textContent = s.count || 0;
+    document.getElementById("stat-qty").textContent = s.qty || "—";
+    document.getElementById("stat-rejected").textContent = s.rejected || 0;
+    document.getElementById("progress-bar").style.width = pct + "%";
+    document.getElementById("progress-lbl").textContent = `${s.count} / ${s.qty || "—"}`;
+    document.getElementById("active-model").textContent = s.secondary_model || "Not set";
+
+    document.getElementById("hdr-boxno").textContent = s.box_no || "—";
+    document.getElementById("hdr-status").textContent = s.active ? "ACTIVE" : "IDLE";
+    document.getElementById("hdr-status-badge").style.color = s.active ? "var(--orange)" : "var(--muted)";
+  }
+
+  function addLog(type, model, count, qty) {
+    const now = new Date().toLocaleTimeString();
+    logEntries.unshift({ type, model, count, qty, time: now });
+    if (logEntries.length > 50) logEntries.pop();
+
+    const wrap = document.getElementById("log-wrap");
+    wrap.innerHTML = logEntries.map(e => `
+      <div class="log-entry ${e.type}">
+        <span>${e.type === 'match' ? '✅' : '❌'}</span>
+        <span>${e.model}</span>
+        <span style="color:var(--muted);font-size:0.7rem;">${e.count}/${e.qty}</span>
+        <span class="log-time">${e.time}</span>
+      </div>
+    `).join("");
+  }
+
+  function showAlert(type, icon, msg) {
+    const box = document.getElementById("alert-box");
+    box.className = `alert show alert-${type}`;
+    document.getElementById("alert-icon").textContent = icon;
+    document.getElementById("alert-msg").innerHTML = msg;
+  }
+
+  function hideAlert() { document.getElementById("alert-box").className = "alert"; }
+  function unlockPrimary() { document.getElementById("card-primary").classList.remove("locked"); }
+  function lockPrimary() { document.getElementById("card-primary").classList.add("locked"); }
+</script>
+</body>
+</html>
