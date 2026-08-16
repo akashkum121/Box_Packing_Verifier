@@ -71,7 +71,7 @@ project/
 ## 📸 Screenshots
 
 ### Scan & Verify Interface
-![Scan & Verify Interface](Scan & Verify Interface.png)
+![Scan & Verify Interface]([Scan & Verify Interface.png](https://github.com/akashkum121/Box_Packing_Verifier/blob/main/Scan%20%26%20Verify%20Interface.png))
 *Step 1 scans the secondary box label (Model + Qty auto-filled). Step 2 scans each primary box and instantly flags a match or mismatch — here catching a model mismatch (`PSDE:875U CON` expected vs. `DIESEL ENGINE-87.5 U` scanned).*
 
 ### Live Packing Status
